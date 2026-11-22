@@ -1,0 +1,18 @@
+# Dependencies and build output
+node_modules/
+dist/
+*.zip
+
+# Local Claude Code state and notes for agents
+.claude/
+.claude-plugin/*.local.*
+
+# Logs, editor and OS files
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets
+.env
+.env.*

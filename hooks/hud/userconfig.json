@@ -1,0 +1,20 @@
+{
+  "prices": {
+    "type": "string",
+    "title": "Model prices (JSON)",
+    "description": "USD per 1M tokens by model-name substring, e.g. {\"opus-5-5\":{\"inPerM\":4,\"outPerM\":20,\"cacheReadPerM\":0.2,\"cacheWritePerM\":5}}; entries override the defaults or add models. Empty: the built-in defaults, public list prices from https://www.databricks.com/product/pricing/proprietary-foundation-model-serving (retrieved 2026-10-18, $0.07/DBU; cacheWrite = 5-minute rate). Plain names (opus, claude-opus-5-5) and gateway names (system.ai.claude-opus-5-5) match the same entry. A model with no price shows —.",
+    "default": ""
+  },
+  "upliftPct": {
+    "type": "number",
+    "title": "Price uplift (%)",
+    "description": "Added to every price, in percent, e.g. 10 for a +10% regional or data-residency surcharge.",
+    "default": 0
+  },
+  "stallMinutes": {
+    "type": "number",
+    "title": "Stall alert (minutes)",
+    "description": "A running subagent that sends nothing for this many minutes gets one message to the main session, which checks on it (SendMessage for a status; stop it if it is stuck). 0 turns the alert off.",
+    "default": 30
+  }
+}

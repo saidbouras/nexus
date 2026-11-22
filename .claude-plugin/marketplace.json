@@ -1,0 +1,14 @@
+{
+  "name": "nexus",
+  "owner": {
+    "name": "Said Bouras"
+  },
+  "plugins": [
+    {
+      "name": "nexus",
+      "source": "./",
+      "description": "Model router, live HUD and orchestrator skill for Claude Code: routes each subagent to the right Claude model and shows the session live above the prompt."
+    }
+  ],
+  "description": "NEXUS: model router, live HUD and orchestrator skill for Claude Code."
+}

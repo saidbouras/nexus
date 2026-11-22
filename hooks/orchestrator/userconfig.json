@@ -1,0 +1,8 @@
+{
+  "orchestratorReminder": {
+    "type": "boolean",
+    "title": "Orchestrator reminder",
+    "description": "Add a short reminder to the system prompt to decide whether to split multi-step work across subagents (see the orchestrator skill). Off adds nothing.",
+    "default": true
+  }
+}

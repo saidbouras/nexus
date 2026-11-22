@@ -1,0 +1,162 @@
+{
+  "profile": {
+    "type": "string",
+    "title": "Router profile",
+    "description": "anthropic = route to the claude-haiku/sonnet/opus-5-5 model ids; databricks = route to the system.ai.claude-* gateway models. Picks the route table when Route map is empty, and the Haiku classifier model when Haiku model is empty.",
+    "options": [
+      "anthropic",
+      "databricks"
+    ],
+    "default": "anthropic"
+  },
+  "chain": {
+    "type": "string",
+    "title": "Classifier chain",
+    "description": "Comma list of classifier steps, tried in order: jev, haiku, local. A step that is not configured (jev without a URL or API key, local without a running Ollama) is skipped. Empty = jev,haiku,local.",
+    "default": "jev,haiku,local"
+  },
+  "fallbackPolicy": {
+    "type": "string",
+    "title": "When a classifier fails",
+    "description": "ask = ask whether to use the next step (once or for the session) or stay on the current model; never = stay on the current model; auto = use the next step without asking.",
+    "options": [
+      "ask",
+      "never",
+      "auto"
+    ],
+    "default": "ask"
+  },
+  "routeMainLoop": {
+    "type": "string",
+    "title": "Main-loop routing",
+    "description": "task (the default) = route per task, not per prompt: a vague prompt (an acknowledgement, a vague wish, no goal; the specified label) keeps the model and commits nothing; the first clear prompt goes through the adaptive switch rule and commits the model that runs after it; once committed, a lighter route keeps the model (with the delegation hint), a heavier one (haiku < sonnet < opus) switches while the context is <= Switch max context, else keeps the model and its cache and tells Claude to delegate the hard part to the nexus:frontier subagent or ask the consult tool (Escalation); a /clear, a resume, a compaction or an idle gap past Cache TTL drops the commitment. adaptive = classify every main-loop prompt; switch the model only when confidence >= Switch confidence, the context is <= Switch max context and fits the target's window, else keep the model (and its prompt cache) and hint Claude to delegate the work to a subagent the router puts on the routed model; every-turn = classify and switch on every prompt (a switch re-reads the conversation uncached; the window guard still applies); session-start = classify the first prompt and keep that model for the session; off = never route the main loop. Subagents are classified at each spawn in every mode.",
+    "options": [
+      "task",
+      "adaptive",
+      "every-turn",
+      "session-start",
+      "off"
+    ],
+    "default": "task"
+  },
+  "switchConfidence": {
+    "type": "number",
+    "title": "Switch confidence",
+    "description": "adaptive and task: the minimum classifier confidence to switch the main-loop model; below it the model is kept (and a hint may be attached in adaptive).",
+    "default": 0.75
+  },
+  "switchMaxContext": {
+    "type": "number",
+    "title": "Switch max context (tokens)",
+    "description": "adaptive and task: the largest main-loop context, in tokens (input + cache read + cache write of the last request), at which the model may switch. A switch re-reads that context uncached on the new model. task lifts it for the first clear prompt after an idle gap or a compaction (the cache is cold anyway).",
+    "default": 50000
+  },
+  "delegationHint": {
+    "type": "boolean",
+    "title": "Delegation hint",
+    "description": "adaptive and task: when the model is kept although the router chose another (task: a lighter one), attach a one-line hidden note to that prompt suggesting a subagent for self-contained work (the router puts it on the routed model). Off attaches nothing.",
+    "default": true
+  },
+  "contextWindows": {
+    "type": "string",
+    "title": "Context windows (JSON)",
+    "description": "Context window in tokens by model-name substring, e.g. {\"haiku\":200000}; the longest matching key wins. Empty or no match: 1000000 for an id with [1m], 200000 otherwise. No switch (adaptive or every-turn) goes to a model whose window the context exceeds.",
+    "default": ""
+  },
+  "continuationSkip": {
+    "type": "boolean",
+    "title": "Skip continuation prompts",
+    "description": "A main-loop prompt that is only an acknowledgement (e.g. ok, yes do it, continue, oui, vas-y; whole-text match, 40 characters at most) skips the classifier and stays on the current model. No model is chosen without the classifier, and the prompt never leaves the machine for classification. Off classifies every prompt.",
+    "default": true
+  },
+  "continuationPhrases": {
+    "type": "string",
+    "title": "Continuation phrases",
+    "description": "Comma list of acknowledgement phrases matched against the whole prompt (case, surrounding punctuation and emoji ignored; two phrases may be joined, e.g. ok, continue). Empty = the built-in English and French list; a value replaces it.",
+    "default": ""
+  },
+  "decisionLog": {
+    "type": "boolean",
+    "title": "Decision log",
+    "description": "Append every main-loop and subagent routing outcome (switched, kept, hint, low-confidence, continuation, classifier-failed, pinned, unknown-context, vague, escalated, consulted, rerouted) to a log in the plugin's own store, kept across sessions, newest 200 entries: time, session id, loop, action, category, difficulty, confidence, classifier step, models, context size, reason and task labels; never any prompt text. With it on, the token use per session and model is kept too, for /route report. /route log [n] prints it, /route log clear empties it, /route log export [path] writes it as JSONL. Off records nothing.",
+    "default": true
+  },
+  "labels": {
+    "type": "boolean",
+    "title": "Task labels",
+    "description": "Ask the classifier seven task labels with the route and the difficulty, in the same request: specified (clear or vague), scope, evidence, failure, localization, language and project. task mode reads specified and evidence to tell a clear prompt; the decision log and the report keep them all (language is unreliable and never routes). Off asks only the route and the difficulty: every classified prompt then counts as clear.",
+    "default": true
+  },
+  "escalation": {
+    "type": "boolean",
+    "title": "Escalation",
+    "description": "task: register the nexus:frontier subagent (on the reasoning/high model, Opus by default) and, when a committed session meets a prompt that needs a heavier model and switching would drop a large cache, attach a hidden note telling Claude to delegate the hard part to it (or ask the consult tool). Off: no frontier agent, and the model is kept with no note.",
+    "default": true
+  },
+  "consultMax": {
+    "type": "number",
+    "title": "Consult calls per session",
+    "description": "How many times per session the model may call the consult tool (a short second opinion from the frontier model, effort high, from a brief it writes). 0 = the tool is not registered.",
+    "default": 5
+  },
+  "cacheTtlMinutes": {
+    "type": "number",
+    "title": "Cache TTL (minutes)",
+    "description": "task: after this many minutes with no main-loop request the prompt cache counts as cold: the commitment is dropped and the next clear prompt may switch whatever the context's size (the window guard still applies). 5 for the default cache; 60 when the provider caches for an hour.",
+    "default": 5
+  },
+  "jevUrl": {
+    "type": "string",
+    "title": "Jev gateway URL",
+    "description": "Databricks AI Gateway SystemOne endpoint, e.g. https://<workspace>.cloud.databricks.com/ai-gateway/typesafe/v1/systemone. Empty = Jev goes to the TypeSafe API directly when its API key is set.",
+    "default": ""
+  },
+  "jevModel": {
+    "type": "string",
+    "title": "Jev model",
+    "description": "The model field sent to SystemOne. Empty = system.ai.typesafeai-jev-1-14-0 on the gateway, jev-latest on the TypeSafe API.",
+    "default": ""
+  },
+  "databricksProfile": {
+    "type": "string",
+    "title": "Databricks CLI profile",
+    "description": "Profile passed to `databricks auth token -p` for the Jev gateway (empty = the CLI's default). The token is cached 10 min in memory only and refreshed once on a 401.",
+    "default": ""
+  },
+  "jevApiKeyEnv": {
+    "type": "string",
+    "title": "TypeSafe API key variable",
+    "description": "Name of the environment variable holding the TypeSafe API key for Jev without a gateway. The key is read from the environment, never stored in settings.",
+    "default": "TYPESAFE_API_KEY"
+  },
+  "haikuModel": {
+    "type": "string",
+    "title": "Haiku classifier model",
+    "description": "Model the haiku step asks through the session's own client ($.model.complete): an alias or a full id. Empty = haiku on the anthropic profile, system.ai.claude-haiku-5-5 on databricks.",
+    "default": ""
+  },
+  "localModel": {
+    "type": "string",
+    "title": "Ollama model",
+    "description": "Model used by the local step (Ollama on localhost:11434).",
+    "default": "qwen3.6:35b-a3b"
+  },
+  "minConfidence": {
+    "type": "number",
+    "title": "Minimum confidence",
+    "description": "Below this top probability the route falls back to general.",
+    "default": 0.6
+  },
+  "timeoutMs": {
+    "type": "number",
+    "title": "Classifier timeout (ms)",
+    "description": "Per-step timeout; 0 uses each step's default (2500 for jev, 4000 for haiku and local).",
+    "default": 0
+  },
+  "routes": {
+    "type": "string",
+    "title": "Route map (JSON)",
+    "description": "JSON object mapping a category (fast, general, reasoning, coding) or a category.difficulty cell (e.g. coding.high; difficulty low, medium or high) to {\"model\": id, \"effort\": level} or a model id alone. A category key sets all three difficulties of that category; a cell key overrides one and wins over its category. Empty or invalid JSON = the profile's matrix; a missing or bad cell entry falls back to its category key, then to the profile's cell.",
+    "default": ""
+  }
+}
