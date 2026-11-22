@@ -4,6 +4,7 @@
 
 Route each Claude Code task to the right model, and watch the session live above the prompt.
 
+[![CI](https://github.com/saidbouras/nexus/actions/workflows/ci.yml/badge.svg)](https://github.com/saidbouras/nexus/actions/workflows/ci.yml)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-green)
 ![Claude Code 2.1.275+](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.275-orange)
